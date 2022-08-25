@@ -10,17 +10,12 @@ class Study:
         self._path = csv_path
         self._df = pd.read_csv(csv_path)
 
-    def region_strings(self) -> List[str]:
+    def possible_regions(self) -> List[str]:
         COL = "Study_Area"
-        out = []
-        regions = self._df.loc[COL].unique()
+        regions = self._df[COL].unique()
+        # regions.sort()
         regions = regions.tolist()
-        for region in regions:
-            if region != np.nan:
-                out.append(region)
-        out.sort()
-        return out
-            
+        return regions
 
     def select_region(self, trgt_region: str) -> pd.DataFrame:
         COL = "Study_Area"

@@ -22,17 +22,24 @@ class Program:
         finished = False
         while not finished:
             region = self._get_usr_trgt_region()
-            
+
+    def _get_primary_street(self):
+        pass            
 
     def _get_usr_trgt_region(self):
-        regions = self.study.region_strings()
+        regions = []
         while True:
             trgt_region = input("Please enter the region you are trying to find parking in: ")
             region = self.study.select_region(trgt_region)
             if region.empty:
                 print("Could not find that region")
                 print("Possible regions include: ")
+                if not regions:
+                    regions = self.study.possible_regions()
                 for i, r in enumerate(regions):
                     print(f"{i}: {r}")
             else:
                 return region
+
+if __name__ == "__main__":
+    Program()
