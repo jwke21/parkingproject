@@ -1,6 +1,4 @@
-# 5002-Project
-
-# Min Park and Jake Van Meter
+# SDOT Annual Parking Study Data Analysis
 
 # Sources
 
