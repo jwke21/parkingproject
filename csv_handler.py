@@ -1,4 +1,5 @@
 from typing import List
+from datetime import datetime
 import pandas as pd
 import numpy as np
 
@@ -12,9 +13,9 @@ USED_COLS = [
 ]
 
 COL_DTYPES = {
-#     "Elmntkey": np.uint32,            # There are 167,799 total rows requiring a uint32
+    # "Elmntkey": np.uint32,            # There are 167,799 total rows requiring a uint32
     "Study_Area": str,
-    # "Date Time": np.datetime64,                 # Will be converted to date time during cleaning
+    "Date Time": str,                 # Will be converted to date time during cleaning
     "Unitdesc": str,                  # The streets
     "Parking_Spaces": np.float16,     # Available spaces
     "Total_Vehicle_Count": np.float16 # Spaces occupied
@@ -34,6 +35,10 @@ DEFAULT_PATH = 'https://data.seattle.gov/api/views/7jzm-ucez/rows.csv'
 
 class Study(object):
     SA = "Study_Area"
+    DT = "Date Time"
+    DA = "Date"
+    TI = "Time"
+    ST = "Unitdesc"
     ELK = "Elmntkey"
     PS = "Parking_Spaces"
     VC = "Total_Vehicle_Count"
@@ -51,11 +56,27 @@ class Study(object):
                          )
         #TODO: provide some means of cleaning the data
         print("cleaning data...")
+        df = self._clean_df(df)
         return df
 
+    def _clean_df(self, df: pd.DataFrame) -> pd.DataFrame:
+        INVALID_DT_VALS = [
+            "1-00-00 00:00:00",
+            ""
+        ]
+
+        # remove invalid rows
+        df = df.loc[~(df[Study.DT].isin(INVALID_DT_VALS))]
+        # convert 'Date Time' from str to DateTime
+        self._convert_to_datetime(df, Study.DT)
+        return df
+
+    def _convert_to_datetime(self, df: pd.DataFrame, col_name: str) -> None:
+        df[col_name] = pd.to_datetime(df[col_name], unit='ns')
+        df[col_name] = np.datetime_as_string(df[col_name])
+
     def _possible_regions(self, df: pd.DataFrame) -> np.ndarray:
-        COL = "Study_Area"
-        return df[COL].unique()
+        return df[Study.SA].unique()
 
     def get_regions(self) -> List[str]:
         out = self._regions.tolist()
@@ -66,17 +87,15 @@ class Study(object):
         return out
 
     def select_region(self, trgt_region: str) -> pd.DataFrame:
-        COL = "Study_Area"
         # locate columns whose 'Study_Area' matches the given target region
-        region = self._df.loc[(self._df[COL] != np.nan) & \
-                              (self._df[COL].str.contains(trgt_region))]
+        region = self._df.loc[(self._df[Study.SA] != np.nan) & \
+                              (self._df[Study.SA].str.contains(trgt_region))]
 
         return region
 
     def is_valid_street(self, street: str) -> bool:
-        COL = "Unitdesc"
         # determine whether any row's 'Unitdesc' column contains the given street
-        return self._df[COL].str.contains(street).any()
+        return self._df[Study.ST].str.contains(street).any()
 
     def is_valid_intersection(self, street1: str, street2: str) -> bool:
         # return whether there are any rows whose 'Unitdesc' contain both streets
@@ -98,18 +117,63 @@ class Study(object):
         intersection = self._get_intersection(street1, street2)
         return intersection[Study.VC].mean()
 
-    def _get_intersection(self, street1:str, street2: str) -> pd.DataFrame:
-        COL = "Unitdesc"
+    def _get_intersection(self, street1: str, street2: str) -> pd.DataFrame:
         # get rows whose 'Unitdesc' contains both streets
-        return self._df.loc[(self._df[COL].str.contains(street1)) & \
-                            (self._df[COL].str.contains(street2))]
+        return self._df.loc[(self._df[Study.ST].str.contains(street1)) & \
+                            (self._df[Study.ST].str.contains(street2))]
+
+    def _get_spots_at_time(self, df: pd.DataFrame, time: str) -> pd.DataFrame:
+        # get the spots that are within 45 minutes of the given time
+        return df.loc[df[Study.DT].str.contains(time[:3])]
+
+    def _available_spots(self, df: pd.DataFrame) -> pd.DataFrame:
+        THRESHOLD = 1
+        return df.loc[df[Study.PS] - df[Study.VC] >= THRESHOLD]
+        
+    def _get_confidence(self, avail_recordings: int, total_recordings: int) -> str:
+        VERY_HIGH = 90
+        HIGH = 75
+        MEDIUM = 50
+        LOW = 25
+
+        percentage_open = (avail_recordings / total_recordings) * 100
+
+        # Conversion of percentage into confidence level 
+        if percentage_open >= VERY_HIGH:
+            return "VERY HIGH" 
+        elif percentage_open >= HIGH:
+            return "HIGH"
+        elif percentage_open >= MEDIUM:
+            return "MEDIUM"
+        elif percentage_open >= LOW:
+            return "LOW"
+        elif percentage_open < LOW:
+            return "VERY LOW"
+
+    def calc_free_space_probability(self, street1: str, street2: str, time: str) -> str:
+        # get rows for intersectionf
+        intersection = self._get_intersection(street1, street2)
+        # get rows within specified hour
+        # datetime.strptime(time, format=)
+        # std_time = pd.to_datetime(time)
+        # std_time = std_time.to_datetime64()
+        # print(std_time)
+        # print(type(std_time))
+        # print(std_time.hour)
+        intersection = self._get_spots_at_time(intersection, time)
+        avail_spots = self._available_spots(intersection)
+        print(avail_spots)
+        return self._get_confidence(len(avail_spots), len(intersection))
+
 
 if __name__ == "__main__":
     handler = Study(DEFAULT_PATH)
 
     print(handler._df)
-    print(handler.get_total_spaces("TERRY AVE", "HARRISON ST"))
-    print(handler.get_average_occupancy("TERRY AVE", "HARRISON ST"))
+    print(handler._df.dtypes)
+    print(handler.calc_free_space_probability("TERRY AVE", "HARRISON ST", "17:00"))
+    # print(handler.get_total_spaces("TERRY AVE", "HARRISON ST"))
+    # print(handler.get_average_occupancy("TERRY AVE", "HARRISON ST"))
     # print(handler._df.describe())
     # print(handler.select_region("dfsdf"))
 
