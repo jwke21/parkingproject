@@ -170,7 +170,6 @@ class Study(object):
         # print(std_time)
         # print(type(std_time))
         # print(std_time.hour)
-        print(time)
         intersection = self._get_spots_at_time(intersection, time[:3])
         avail_spots = self._available_spots(intersection)
         return self._get_confidence(len(avail_spots), len(intersection))
