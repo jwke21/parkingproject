@@ -1,3 +1,4 @@
+from time import sleep
 from typing import List
 from datetime import datetime
 import pandas as pd
@@ -56,6 +57,7 @@ class Study(object):
                          )
         #TODO: provide some means of cleaning the data
         print("cleaning data...")
+        sleep(0.1)
         df = self._clean_df(df)
         return df
 
@@ -122,9 +124,9 @@ class Study(object):
         return self._df.loc[(self._df[Study.ST].str.contains(street1)) & \
                             (self._df[Study.ST].str.contains(street2))]
 
-    def _get_spots_at_time(self, df: pd.DataFrame, time: str) -> pd.DataFrame:
+    def _get_spots_at_time(self, df: pd.DataFrame, hour: str) -> pd.DataFrame:
         # get the spots that are within 45 minutes of the given time
-        return df.loc[df[Study.DT].str.contains(time[:3])]
+        return df.loc[df[Study.DT].str.contains(hour)]
 
     def _available_spots(self, df: pd.DataFrame) -> pd.DataFrame:
         THRESHOLD = 1
@@ -136,11 +138,17 @@ class Study(object):
         MEDIUM = 50
         LOW = 25
 
+        # edge case where there is no recorded data
+        # reasoning: if there was no one surveying the time is likely to be too early or too
+        #            late for anyone to be occupying the space (e.g. 01:00)
+        if not total_recordings:
+            return HIGH
+
         percentage_open = (avail_recordings / total_recordings) * 100
 
-        # Conversion of percentage into confidence level 
+        # conversion of percentage into confidence level 
         if percentage_open >= VERY_HIGH:
-            return "VERY HIGH" 
+            return "VERY HIGH"
         elif percentage_open >= HIGH:
             return "HIGH"
         elif percentage_open >= MEDIUM:
@@ -153,6 +161,8 @@ class Study(object):
     def calc_free_space_probability(self, street1: str, street2: str, time: str) -> str:
         # get rows for intersectionf
         intersection = self._get_intersection(street1, street2)
+        dt_time = datetime.strptime(time, "%H:%M")
+        time = dt_time.strftime("%H:%M")
         # get rows within specified hour
         # datetime.strptime(time, format=)
         # std_time = pd.to_datetime(time)
@@ -160,18 +170,18 @@ class Study(object):
         # print(std_time)
         # print(type(std_time))
         # print(std_time.hour)
-        intersection = self._get_spots_at_time(intersection, time)
+        print(time)
+        intersection = self._get_spots_at_time(intersection, time[:3])
         avail_spots = self._available_spots(intersection)
-        print(avail_spots)
         return self._get_confidence(len(avail_spots), len(intersection))
 
 
-if __name__ == "__main__":
-    handler = Study(DEFAULT_PATH)
+# if __name__ == "__main__":
+    # handler = Study(DEFAULT_PATH)
 
-    print(handler._df)
-    print(handler._df.dtypes)
-    print(handler.calc_free_space_probability("TERRY AVE", "HARRISON ST", "17:00"))
+    # print(handler._df)
+    # print(handler._df.dtypes)
+    # print(handler.calc_free_space_probability("TERRY AVE", "HARRISON ST", "17:00"))
     # print(handler.get_total_spaces("TERRY AVE", "HARRISON ST"))
     # print(handler.get_average_occupancy("TERRY AVE", "HARRISON ST"))
     # print(handler._df.describe())
