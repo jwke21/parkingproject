@@ -11,7 +11,11 @@ CSV_URL = 'https://data.seattle.gov/api/views/7jzm-ucez/rows.csv'
 
 class Program(object):
     def __init__(self, data_path: str):
-        self.study = self._load_study(data_path)
+        self._study = self._load_study(data_path)
+
+    @property
+    def study(self) -> Study:
+        return self._study
 
     def _load_study(self, data_path: str) -> Study:
         print("loading study data...")
@@ -66,7 +70,7 @@ class Program(object):
                 print("Invalid input... Correct format: HH:MM")
                 sleep(0.5)
             else:
-                confidence = self.study.calc_free_space_probability(street1, street2, usr_time)
+                confidence = self._study.calc_free_space_probability(street1, street2, usr_time)
                 print(f"Your likelihood of finding parking at {usr_time} is: {confidence}")
                 break
 
@@ -80,9 +84,9 @@ class Program(object):
 
     def _show_basic_stats(self, street1: str, street2: str) -> None:
         # get total spaces available around given intersection
-        avail_spaces = self.study.get_total_spaces(street1, street2)
+        avail_spaces = self._study.get_total_spaces(street1, street2)
         # average number of spots occupied for all times at specified zone
-        avg_occupancy = self.study.get_average_occupancy(street1, street2)
+        avg_occupancy = self._study.get_average_occupancy(street1, street2)
         # inform the user of some basic stats about that zone
         print(f"Estimated total possible parking spaces: {avail_spaces}")
         print(f"Average number of spots taken for all recorded times: {avg_occupancy}")
@@ -95,7 +99,7 @@ class Program(object):
             p_street = self._get_street()
             print("Please enter the name of the second street:")
             s_street = self._get_street()
-            if not self.study.is_valid_intersection(p_street, s_street):
+            if not self._study.is_valid_intersection(p_street, s_street):
                 print("Could not find that intersection!")
             else:
                 break
@@ -104,14 +108,14 @@ class Program(object):
     def _get_street(self):
         while True:
             street = input("> ").upper()
-            if not self.study.is_valid_street(street):
+            if not self._study.is_valid_street(street):
                 print("Could not find that street!")
             else:
                 break
         return street
 
     def _get_usr_trgt_region(self):
-        regions = self.study.get_regions()
+        regions = self._study.get_regions()
         while True:
             trgt_region = input("Please enter the region you are trying to find parking in:\n>  ").lower()
             if trgt_region in regions:
@@ -123,8 +127,6 @@ class Program(object):
                     print(f"{i}: {r}")
         return trgt_region
 
-    def get_study(self) -> Study:
-        return self.study
 
 
 class Loader(object):

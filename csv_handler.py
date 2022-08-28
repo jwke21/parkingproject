@@ -49,6 +49,18 @@ class Study(object):
         self._df = self._load_df(csv_path)
         self._regions = self._possible_regions(self._df)
 
+    @property
+    def path(self) -> str:
+        return self._path
+
+    @property
+    def df(self) -> pd.DataFrame:
+        return self._df
+
+    @property
+    def regions(self) -> np.ndarray:
+        return self._regions
+
     def _load_df(self, path: str) -> pd.DataFrame:
         print("reading csv...")
         df = pd.read_csv(path,
