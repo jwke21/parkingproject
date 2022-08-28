@@ -138,7 +138,7 @@ class Loader(object):
     def save_program(program: Program):
         print(f"saving study data to: {DEFAULT_DF_PATH}")
         with open(DEFAULT_DF_PATH, 'wb') as dest:
-            pickle.dump(program.get_study(), dest)
+            pickle.dump(program.study, dest)
 
 
 if __name__ == "__main__":

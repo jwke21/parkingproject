@@ -56,7 +56,7 @@ class Study(object):
     @property
     def df(self) -> pd.DataFrame:
         return self._df
-
+    
     @property
     def regions(self) -> np.ndarray:
         return self._regions
@@ -187,9 +187,12 @@ class Study(object):
         return self._get_confidence(len(avail_spots), len(intersection))
 
 
-# if __name__ == "__main__":
-    # handler = Study(DEFAULT_PATH)
+if __name__ == "__main__":
+    handler = Study(DEFAULT_PATH)
 
+    print(handler.path)
+    print(handler.df)
+    print(handler.regions)
     # print(handler._df)
     # print(handler._df.dtypes)
     # print(handler.calc_free_space_probability("TERRY AVE", "HARRISON ST", "17:00"))
